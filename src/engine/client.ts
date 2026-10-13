@@ -33,6 +33,7 @@ async function getJson<T>(input: string, init?: RequestInit & { timeoutMs?: numb
 
 /** Which optional services this deployment offers. Static hosting (no /api) → all false. */
 export function capabilities(): Promise<Capabilities> {
+  if (import.meta.env.VITE_STATIC_HOST === 'true') return Promise.resolve(NO_SERVER)
   capsPromise ??= getJson<Capabilities>('/api/status', { timeoutMs: 3000 })
     .then((r) => (r.data && r.data.server ? r.data : NO_SERVER))
     .catch(() => NO_SERVER)

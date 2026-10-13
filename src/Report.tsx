@@ -106,12 +106,12 @@ export function ReportView({ report, onBack, onExpected, onShare, rechecking }: 
         </section>
 
         <AnalysisPanel report={report} />
-        <div className="mt-6 grid gap-6 lg:grid-cols-12">
+        <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-12">
           <div className="grid min-w-0 gap-6 lg:col-span-7">
             <IdentityCard report={report} checked={checked} />
             <WhyCard rows={report.evidence} />
           </div>
-          <aside className="grid min-w-0 content-start gap-6 lg:col-span-5">
+          <aside className="grid min-w-0 grid-cols-[minmax(0,1fr)] content-start gap-6 lg:col-span-5">
             <form
               className="rounded-[24px] border border-line bg-card p-5 sm:p-7"
               onSubmit={(e) => {
@@ -131,7 +131,7 @@ export function ReportView({ report, onBack, onExpected, onShare, rechecking }: 
                   placeholder="e.g. Royal Mail, Vinted, a shop name"
                   maxLength={80}
                   autoComplete="off"
-                  className="h-12 min-w-0 flex-1 rounded-xl border border-line bg-paper px-3.5 text-[16px] outline-none placeholder:text-mute/80 focus:border-ink"
+                  className="h-12 w-0 min-w-0 flex-1 rounded-xl border border-line bg-paper px-3.5 text-[16px] outline-none placeholder:text-mute/80 focus:border-ink"
                 />
                 <button disabled={rechecking || !expected.trim()} className="h-12 shrink-0 rounded-xl bg-ink px-4 text-[15px] font-semibold text-paper disabled:opacity-40">
                   {rechecking ? 'Checking…' : 'Compare'}

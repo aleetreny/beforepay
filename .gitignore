@@ -14,3 +14,8 @@ submission-draft.json
 task_plan.md
 findings.md
 progress.md
+
+.DS_Store
+.openai/
+.sites-runtime/
+.coverage/

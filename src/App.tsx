@@ -18,6 +18,8 @@ type View =
   | { name: 'analyzing'; url: URL }
   | { name: 'report'; report: Report; raw: URL | null; demo?: DemoScenario }
 
+const CHECK_ROUTE = `${import.meta.env.BASE_URL}${import.meta.env.VITE_STATIC_HOST === 'true' ? '' : 'check'}`
+
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 const reduced = () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches
 
@@ -89,7 +91,7 @@ export default function App() {
       const qs = new URLSearchParams({ url: shareableTarget(url) })
       if (opts.expected) qs.set('expect', opts.expected)
       try {
-        history.replaceState(null, '', `${import.meta.env.BASE_URL}check?${qs}`)
+        history.replaceState(null, '', `${CHECK_ROUTE}?${qs}`)
       } catch {
         /* ignore */
       }
@@ -106,7 +108,7 @@ export default function App() {
       if (navigate) {
         const params = new URLSearchParams({ demo: demo.id })
         if (expected) params.set('expect', expected)
-        go(`${import.meta.env.BASE_URL}check?${params}`)
+        go(`${CHECK_ROUTE}?${params}`)
       }
       const url = new URL(demo.url)
       const current = ++operation.current
@@ -131,7 +133,7 @@ export default function App() {
     if (!shared) return
     const r = ingest(shared)
     if (r.ok) {
-      const source: InputSource = location.pathname.includes('share') ? 'share' : 'link'
+      const source: InputSource = location.pathname.includes('share') || params.get('source') === 'share' ? 'share' : 'link'
       if (params.get('auto') === '1') startCheck(r.url, source, { expected: params.get('expect') ?? undefined })
       else setView({ name: 'confirm', url: r.url, source, expected: params.get('expect') ?? undefined })
     } else flash(INGEST_MESSAGES[r.error])
@@ -183,7 +185,7 @@ export default function App() {
     const base = `${location.origin}${location.pathname.replace(/(check|share-target)\/?$/, '')}`.replace(/\/?$/, '/')
     const params = new URLSearchParams(view.demo ? { demo: view.demo.id } : { url: shareableTarget(view.raw!) })
     if (view.report.expected) params.set('expect', view.report.expected)
-    const link = `${base}check?${params}`
+    const link = `${base}${import.meta.env.VITE_STATIC_HOST === 'true' ? '' : 'check'}?${params}`
     try {
       await navigator.clipboard.writeText(link)
       flash('Link copied — session tokens removed')
@@ -259,7 +261,7 @@ function Confirm({ url, source, initialExpected, onCancel, onGo }: { url: URL; s
 function Header({ right }: { right?: React.ReactNode }) {
   return (
     <header className="safe-x mx-auto flex max-w-[1240px] items-center justify-between py-5">
-      <a href="./" aria-label="BeforePay home" className="rounded-lg">
+      <a href={import.meta.env.BASE_URL} aria-label="BeforePay home" className="rounded-lg">
         <Wordmark />
       </a>
       {right}

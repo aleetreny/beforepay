@@ -47,6 +47,7 @@ function devApi(): Plugin {
 }
 
 export default defineConfig({
+  base: process.env.VITE_BASE_PATH || '/',
   plugins: [react(), tailwindcss(), devApi()],
   build: { target: ['es2020', 'safari14'], ...(process.env.SINGLE_FILE ? { assetsInlineLimit: 100_000_000, cssCodeSplit: false } : {}) },
   test: { include: ['tests/**/*.test.ts'] },
