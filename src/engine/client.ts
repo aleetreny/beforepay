@@ -53,7 +53,8 @@ async function lookupRdap(domain: string | null, caps: Capabilities): Promise<Rd
     try {
       const r = await getJson<RdapInfo & { sourceUrl?: string }>(api(`rdap?domain=${encodeURIComponent(domain)}`))
       if (r.data?.status === 'ok') return { ...r.data, source: { label: 'Domain registry (RDAP)', url: sourceUrl } }
-      if (r.data) return { status: 'unavailable', reason: r.data.reason }
+      // Registries may reject server/datacentre traffic while allowing browser CORS.
+      // An unavailable proxy response must not disable the existing direct lookup.
     } catch {
       /* fall back to a direct lookup */
     }
