@@ -6,7 +6,7 @@
   "description": "BeforePay \u2014 know before you pay. Payment transparency checks for links, QR codes and screenshots.",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build && node scripts/offline-shell.mjs",
+    "build": "tsc -b && SINGLE_FILE=1 vite build && node scripts/inline-site.mjs",
     "build:static": "tsc -b && vite build --base ./ --outDir dist-static",
     "preview": "vite preview",
     "test": "vitest run",

@@ -459,7 +459,7 @@ function Home({ caps, installEvt, onCheck, onDemo, onConfirm, flash }: HomeProps
 
           <aside className="on-dark rise min-w-0 self-start rounded-[28px] bg-ink p-5 text-paper sm:p-7 lg:col-span-5 lg:mt-3" style={{ animationDelay: '140ms' }} aria-labelledby="sims">
             <h2 id="sims" className="text-[22px] font-bold tracking-[-0.03em]">Try a simulation</h2>
-            <p className="mt-1 text-[15px] text-mute-dark">Three PayPal examples. Address checks run for real and work offline.</p>
+            <p className="mt-1 text-[15px] text-mute-dark">Three PayPal examples. Address checks run for real on your device.</p>
             <ul className="mt-5 grid grid-cols-[minmax(0,1fr)] gap-2">
               {DEMOS.filter((d) => d.id.startsWith('paypal')).sort((a, b) => a.id === 'paypal' ? -1 : b.id === 'paypal' ? 1 : 0).map((d) => (
                 <li key={d.id}>

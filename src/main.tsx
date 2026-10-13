@@ -11,8 +11,4 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 )
 
-if ('serviceWorker' in navigator && import.meta.env.PROD && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1') && !location.hostname.endsWith('claude.ai')) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(() => {})
-  })
-}
+// Cache cleanup runs in the HTML bootstrap before this application module.
