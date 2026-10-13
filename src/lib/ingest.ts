@@ -11,6 +11,7 @@ export type IngestError =
   | 'unsupported_scheme'
   | 'too_long'
   | 'payment_uri'
+  | 'multiple_links'
 
 export interface PaymentUri {
   scheme: string
@@ -26,7 +27,7 @@ export type IngestResult =
 
 const URL_IN_TEXT = /\bhttps?:\/\/[^\s<>"'`]+/i
 const WWW_IN_TEXT = /\bwww\.[^\s<>"'`]+/i
-const BARE_DOMAIN = /\b(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,24}(?::\d{2,5})?(?:\/[^\s<>"'`]*)?/i
+const BARE_DOMAIN = /(?:[\p{L}\p{N}](?:[\p{L}\p{N}-]{0,61}[\p{L}\p{N}])?\.)+[\p{L}]{2,24}(?::\d{2,5})?(?:[/?#][^\s<>"'`]*)?/iu
 const PAYMENT_SCHEME = /^(upi|bitcoin|ethereum|litecoin|lightning|solana|tron|bitcoincash):/i
 const UNSAFE_SCHEME = /^(javascript|data|file|vbscript|blob|about|chrome|intent|content):/i
 
@@ -82,6 +83,8 @@ export function ingest(input: string | null | undefined): IngestResult {
   }
   if (UNSAFE_SCHEME.test(text) || (/^[a-z][a-z0-9+.-]*:/i.test(text) && !/^https?:\/\//i.test(text) && !/^[a-z0-9-]+\.[a-z]/i.test(text))) return { ok: false, error: 'unsupported_scheme' }
 
+  const links = [...text.matchAll(/\bhttps?:\/\/[^\s<>"'`]+/gi)].map(m => trimTrailing(m[0]))
+  if (new Set(links).size > 1) return { ok: false, error: 'multiple_links' }
   let candidate: string | null = null
   const explicit = text.match(URL_IN_TEXT)
   if (explicit) candidate = explicit[0]
@@ -123,6 +126,7 @@ export const INGEST_MESSAGES: Record<IngestError, string> = {
   unsupported_scheme: 'Only web links (http or https) can be checked. Other link types are blocked for your safety.',
   too_long: 'That link is unusually long. Copy just the web address and try again.',
   payment_uri: 'This is a direct payment instruction, not a web page.',
+  multiple_links: 'This message contains more than one link. Paste only the payment link you want to check.',
 }
 
 /* ------------------------------------------------------------------ */

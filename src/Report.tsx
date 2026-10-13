@@ -1,3 +1,4 @@
+import { AnalysisPanel } from './AnalysisPanel'
 import { useEffect, useState } from 'react'
 import { ArrowLeft, ArrowRight, Check, CircleDashed, Copy, ExternalLink, FlaskConical, OctagonAlert, RotateCcw, SearchCheck, CircleHelp, Sparkles } from 'lucide-react'
 import type { EvidenceRow, ParsedUrl, Report } from './engine/types'
@@ -103,6 +104,7 @@ export function ReportView({ report, onBack, onExpected, onShare, rechecking }: 
           </div>
         </section>
 
+        <AnalysisPanel report={report} />
         <div className="mt-6 grid gap-6 lg:grid-cols-12">
           <div className="grid min-w-0 gap-6 lg:col-span-7">
             <IdentityCard report={report} checked={checked} />

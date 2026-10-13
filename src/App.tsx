@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ArrowRight, Bookmark, Camera, ClipboardPaste, Download, EyeOff, ImageUp, Link2, Lock, Play, ScanLine, Share, Smartphone, Sparkles, WifiOff,
 } from 'lucide-react'
+import { BRANDS } from './engine/reference'
 import { DEMOS, type DemoScenario } from './engine/demos'
 import { capabilities, findDemo, readScreenshot, runCheck, runDemo, searchRegistry, type Capabilities } from './engine/client'
 import { parseTarget } from './engine/analyze'
@@ -66,7 +67,7 @@ export default function App() {
   }, [])
 
   const animateSteps = useCallback(async (work: Promise<unknown>) => {
-    const per = reduced() ? 60 : 520
+    const per = reduced() ? 20 : 180
     for (let i = 0; i < STEPS.length; i++) {
       setStep(i)
       await sleep(per)
@@ -101,8 +102,12 @@ export default function App() {
   )
 
   const startDemo = useCallback(
-    async (demo: DemoScenario, expected?: string) => {
-      go(`${import.meta.env.BASE_URL}check?demo=${demo.id}`)
+    async (demo: DemoScenario, expected?: string, navigate = true) => {
+      if (navigate) {
+        const params = new URLSearchParams({ demo: demo.id })
+        if (expected) params.set('expect', expected)
+        go(`${import.meta.env.BASE_URL}check?${params}`)
+      }
       const url = new URL(demo.url)
       const current = ++operation.current
       setView({ name: 'analyzing', url })
@@ -135,10 +140,18 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    const onPop = () => { operation.current++; setView({ name: 'home' }); setRechecking(false) }
+    const onPop = () => {
+      operation.current++
+      setRechecking(false)
+      const params = new URLSearchParams(location.search)
+      const demo = findDemo(params.get('demo'))
+      if (demo) { startDemo(demo, params.get('expect') ?? undefined, false); return }
+      const target = ingest(params.get('url'))
+      setView(target.ok ? { name: 'confirm', url: target.url, source: 'link', expected: params.get('expect') ?? undefined } : { name: 'home' })
+    }
     addEventListener('popstate', onPop)
     return () => removeEventListener('popstate', onPop)
-  }, [])
+  }, [startDemo])
 
   const home = () => {
     operation.current++
@@ -428,6 +441,13 @@ function Home({ caps, installEvt, onCheck, onDemo, onConfirm, flash }: HomeProps
               </button>
               <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => { onFile(e.target.files?.[0]); e.target.value = '' }} />
             </div>
+            <div className="mt-5">
+              <p className="text-[14px] font-semibold text-mute">Try an address check</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {REAL_EXAMPLES.map(example => <button key={example.label} onClick={() => { setValue(example.url); submit(example.url) }} className="min-h-11 rounded-full bg-paper-2 px-4 text-[14px] font-semibold hover:bg-line">{example.label}</button>)}
+              </div>
+              <p className="mt-2 text-[13px] text-mute">The same rules run on your own links. The brand-trick address is illustrative.</p>
+            </div>
             <p className="rise mt-6 flex items-start gap-2 text-[15px] text-mute" style={{ animationDelay: '220ms' }}>
               <Smartphone size={17} className="mt-0.5 shrink-0" />
               <span>
@@ -514,6 +534,13 @@ function Home({ caps, installEvt, onCheck, onDemo, onConfirm, flash }: HomeProps
   )
 }
 
+const REAL_EXAMPLES = [
+  { label: 'PayPal checkout', url: 'https://www.paypal.com/checkoutnow' },
+  { label: 'Stripe payment', url: 'https://buy.stripe.com/' },
+  { label: 'Brand trick', url: 'https://paypal.com@payments.example/pay' },
+  { label: 'Hidden destination', url: 'https://bit.ly/payment-example' },
+]
+
 function Steps() {
   const steps = [
     { t: 'Share or paste', d: 'Send a checkout link, a seller\'s message or a QR code to BeforePay.', art: <ArtShare /> },
@@ -570,9 +597,10 @@ function HowItWorks({ caps }: { caps: Capabilities | null }) {
   const state = (on: boolean | undefined, label = 'Live') => (caps === null ? 'Checking…' : on ? label : 'Not configured')
   const rows: [string, string, boolean][] = [
     ['Address & domain structure', 'Always on', true],
-    ['Brand impersonation (36 brands)', 'Always on', true],
+    [`Brand resemblance (${BRANDS.length} brands)`, 'Always on', true],
     ['Payment processor recognition', 'Always on', true],
-    ['Domain registration date (RDAP)', 'Live', true],
+    ['Domain registration date (RDAP)', 'Live lookup', true],
+    ['Public DNS availability', 'Live lookup', true],
     ['Phishing & malware databases', state(caps?.threat, 'Google Safe Browsing'), Boolean(caps?.threat)],
     ['Screenshot reading (AI)', state(caps?.ai, 'OpenAI'), Boolean(caps?.ai)],
     ['UK company register', state(caps?.registry, 'Companies House'), Boolean(caps?.registry)],
@@ -601,7 +629,7 @@ function HowItWorks({ caps }: { caps: Capabilities | null }) {
           <li><strong className="font-bold">Nothing is stored.</strong> No accounts, no history. Checks live only in this tab.</li>
           <li><strong className="font-bold">Tokens are stripped.</strong> Session IDs, emails and card-like numbers are hidden from reports and shared links.</li>
           <li><strong className="font-bold">QR codes are read on your device.</strong> A screenshot only leaves your phone if you choose AI reading.</li>
-          <li><strong className="font-bold">Lookups we make.</strong> The domain name goes to the public registry (RDAP); the link goes to a threat database only when one is configured.</li>
+          <li><strong className="font-bold">Lookups we make.</strong> The domain name goes to the public registry (RDAP), and the hostname to Cloudflare's public DNS resolver; the link goes to a threat database only when one is configured.</li>
         </ul>
       </div>
     </section>

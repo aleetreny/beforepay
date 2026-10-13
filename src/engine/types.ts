@@ -115,6 +115,7 @@ export interface Externals {
   threat: ThreatInfo
   registry?: RegistryInfo
   expandedFrom?: string // original shortened link (redacted)
+  dns?: DnsInfo
   simulated?: boolean
 }
 
@@ -140,6 +141,24 @@ export interface Simulation {
   note: string
 }
 
+export interface DnsInfo {
+  status: 'resolved' | 'not_found' | 'unavailable' | 'skipped'
+  addresses?: string[]
+  reason?: string
+  checkedAt?: string
+  source?: Source
+}
+
+export interface Criterion {
+  id: string
+  title: string
+  status: Status
+  summary: string
+  detail: string
+  basis: 'Address rule' | 'Reference list' | 'Live lookup' | 'Optional service' | 'User input' | 'Simulation'
+  source?: Source
+}
+
 export interface Report {
   id: string
   source: InputSource
@@ -152,6 +171,9 @@ export interface Report {
   chain: ChainNode[]
   evidence: EvidenceRow[]
   signals: Signal[]
+  criteria: Criterion[]
+  dns?: DnsInfo
+  engineVersion: string
   notChecked: string[]
   checkedAt: string
   expected?: string

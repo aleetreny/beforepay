@@ -1,4 +1,5 @@
 import { getDomain } from 'tldts'
+import { lookupDns } from './dns'
 import { analyze } from './analyze'
 import { DEMOS, type DemoScenario } from './demos'
 import { SHORTENERS } from './reference'
@@ -117,9 +118,13 @@ export async function runCheck(url: URL, opts: CheckOptions): Promise<Report> {
     expandedFrom ??= redactUrl(url).href
     target = next
   }
-  const domain = getDomain(target.hostname, { allowPrivateDomains: true })
-  const [rdap, threat] = await Promise.all([lookupRdap(domain, caps), lookupThreat(target.href, caps)])
-  const externals: Externals = { rdap, threat, expandedFrom }
+  const domain = getDomain(target.hostname)
+  const tenant = getDomain(target.hostname, { allowPrivateDomains: true })
+  const [rdap, threat, dns] = await Promise.all([
+    tenant !== domain ? Promise.resolve({ status: 'unavailable' as const, reason: 'shared platform: the registry age belongs to the platform, not this merchant' }) : lookupRdap(domain, caps),
+    lookupThreat(target.href, caps), lookupDns(target.hostname),
+  ])
+  const externals: Externals = { rdap, threat, dns, expandedFrom }
   return analyze(target, externals, opts)
 }
 
