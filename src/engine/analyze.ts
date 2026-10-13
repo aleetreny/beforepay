@@ -1,6 +1,7 @@
 import { parse as parseDomain } from 'tldts'
 import { toUnicode } from 'punycode'
 import { buildCriteria, ENGINE_VERSION } from './criteria'
+import { contextChecks } from './context'
 import { redactUrl, redactUsername } from '../lib/ingest'
 import {
   BRANDS,
@@ -22,6 +23,7 @@ import type {
   Field,
   InputSource,
   ParsedUrl,
+  PaymentContext,
   ProcessorMatch,
   Report,
   ScreenshotFindings,
@@ -300,6 +302,7 @@ function findBrandByName(name: string, brands: Brand[]): Brand | null {
 export interface AnalyzeOptions {
   source: InputSource
   expected?: string
+  context?: PaymentContext
   screenshot?: ScreenshotFindings
   extraBrands?: Brand[]
   simulation?: Simulation
@@ -462,6 +465,8 @@ export function analyze(url: URL, externals: Externals, opts: AnalyzeOptions): R
   }
 
   /* ---- Verdict ---- */
+  const contextEvidence = contextChecks(opts.context)
+  signals.push(...contextEvidence.signals)
   const warnings = signals.filter((s) => s.severity === 'warning')
   const cautions = signals.filter((s) => s.severity === 'caution')
   const corroborated =
@@ -483,7 +488,12 @@ export function analyze(url: URL, externals: Externals, opts: AnalyzeOptions): R
 
   /* ---- Words ---- */
   const criteria = buildCriteria({ p, rdap, ageDays, brand, processor, expectedRow, signals, threat, dns: externals.dns, shot, simulated: externals.simulated })
+  criteria.push(...contextEvidence.criteria)
   const copy = compose(verdict, signals, { p, site, processor, brand, expected, source: opts.source, shot })
+  if (verdict !== 'warning' && contextEvidence.signals.length) {
+    copy.explanation = contextEvidence.signals[0].text + ' The destination does not establish who receives the money.'
+    copy.nextStep = { title: opts.context?.channel === 'marketplace' ? 'Keep the payment in the marketplace' : 'Confirm the request through a trusted channel', body: 'Open the original app or contact the person using details you already trust. Confirm the recipient, amount and available buyer protection before paying.' }
+  }
 
   const notChecked: string[] = []
   if (threat.status !== 'clean' && threat.status !== 'flagged') notChecked.push(threat.status === 'not_configured' ? 'Phishing and malware databases (no threat-intelligence service configured on this deployment)' : 'Phishing and malware databases (lookup unavailable right now)')
@@ -512,6 +522,7 @@ export function analyze(url: URL, externals: Externals, opts: AnalyzeOptions): R
     notChecked,
     checkedAt: now.toISOString(),
     expected,
+    context: opts.context ? { channel: opts.context.channel, method: opts.context.method, amount: opts.context.amount?.slice(0, 40) } : undefined,
     screenshot: shot,
     registry: externals.registry,
     simulation: opts.simulation,
@@ -634,7 +645,7 @@ function contentRow(shot: ScreenshotFindings): EvidenceRow {
   for (const s of shot.suspicious) details.push(`Flagged wording: ${s}`)
   if (shot.summary) details.push(shot.summary)
   const status: Status = shot.offPlatformRequest ? 'fail' : shot.suspicious.length ? 'caution' : 'info'
-  const summary = shot.offPlatformRequest
+  const summary = shot.readingMethod === 'local_ocr' ? 'A link was read locally. The rest of the screenshot has not been analysed.' : shot.offPlatformRequest
     ? 'Asks you to pay outside the platform — a classic way to remove buyer protection.'
     : shot.suspicious.length
       ? shot.suspicious[0]
@@ -645,9 +656,9 @@ function contentRow(shot: ScreenshotFindings): EvidenceRow {
     status,
     summary,
     details,
-    sources: [{ label: shot.simulated ? 'Scenario fixture (simulated)' : 'Read from your screenshot by AI — may contain mistakes' }],
+    sources: [{ label: shot.simulated ? 'Scenario fixture (simulated)' : shot.readingMethod === 'local_ocr' ? 'Read on your device — may contain reading errors' : 'Read from your screenshot by AI — may contain mistakes' }],
     simulated: shot.simulated,
-    aiAssisted: !shot.simulated,
+    aiAssisted: !shot.simulated && shot.readingMethod !== 'local_ocr',
   }
 }
 

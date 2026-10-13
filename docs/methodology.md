@@ -27,7 +27,7 @@ An old domain or a clean threat-feed response cannot, by itself, establish merch
 | External phishing and malware feeds | Optional configured service | Unconfigured and failed responses remain unchecked |
 | Actual recipient identity | No trusted receiving-account evidence available | Always explicitly not verified |
 
-A thirteenth criterion is added when message/screenshot findings are supplied. The three current PayPal examples contain no fabricated external lookups. Archived fictional scenarios remain reachable for compatibility and label their fixture data explicitly.
+Screenshot findings and optional payment context add individually explained criteria. Context wording is a conservative rule match, not a model judgement or proof of fraud. Local OCR extracts a link only; it does not inspect the remaining screenshot content. The three current PayPal examples contain no fabricated external lookups. Archived fictional scenarios remain reachable for compatibility and label their fixture data explicitly.
 
 ## Sources and freshness
 
@@ -43,4 +43,4 @@ Each report records its analysis time and engine version. A report cannot predic
 
 The project does not measure real-world fraud prevalence, sensitivity or specificity. The 114-address regression corpus consists of known/reference addresses and illustrative edge cases. It verifies intended rule behaviour rather than giving a security certification.
 
-The public static app does not connect optional server integrations. The development API also contains a shortener-expansion handler that can contact allowlisted shorteners; that behaviour is outside the public Pages deployment. Do not describe a server-enabled deployment as never contacting a submitted shortener.
+The public Pages app connects to the Sites backend. Optional Google Safe Browsing v5 or Web Risk and Companies House remain unchecked until server keys are configured. The published router does not expose the experimental shortener-expansion or remote-vision handlers. Submitted payment pages and shortener links are never fetched. Google receives the destination URL for an enabled reputation lookup.

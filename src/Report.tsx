@@ -12,7 +12,7 @@ export const STEPS = [
   'Building the merchant card',
 ]
 
-export function Analyzing({ url, step, threatConfigured }: { url: ParsedUrl; step: number; threatConfigured: boolean }) {
+export function Analyzing({ url, step, threatConfigured, onCancel }: { url: ParsedUrl; step: number; threatConfigured: boolean; onCancel: () => void }) {
   return (
     <section className="safe-x mx-auto flex min-h-[78dvh] max-w-[880px] flex-col justify-center py-12" aria-live="polite" aria-busy="true">
       <p className="mb-6 text-[15px] font-medium text-mute">Checking — we never open the page itself</p>
@@ -35,6 +35,7 @@ export function Analyzing({ url, step, threatConfigured }: { url: ParsedUrl; ste
           )
         })}
       </ol>
+      <button onClick={onCancel} className="mt-5 min-h-12 self-start rounded-xl px-4 text-[15px] font-semibold underline underline-offset-4">Cancel check</button>
     </section>
   )
 }
@@ -105,11 +106,15 @@ export function ReportView({ report, onBack, onExpected, onShare, rechecking }: 
           </div>
         </section>
 
-        <AnalysisPanel report={report} />
+        <QuickSummary report={report} />
+        <details className="mt-6 rounded-2xl border border-line bg-card">
+          <summary className="flex min-h-14 cursor-pointer flex-wrap items-center justify-between gap-2 px-5 py-4 text-[17px] font-semibold">See all checks and sources <span className="text-[14px] font-normal text-mute">{report.criteria.filter(c => c.status === 'not_checked').length} checks unavailable · Expand</span></summary>
+          <div className="px-3 pb-3"><AnalysisPanel report={report} /></div>
+        </details>
         <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-12">
           <div className="grid min-w-0 gap-6 lg:col-span-7">
-            <IdentityCard report={report} checked={checked} />
             <WhyCard rows={report.evidence} />
+            <details className="rounded-2xl border border-line bg-card"><summary className="min-h-14 cursor-pointer px-5 py-4 text-[17px] font-semibold">Identity details and company records</summary><IdentityCard report={report} checked={checked} /></details>
           </div>
           <aside className="grid min-w-0 grid-cols-[minmax(0,1fr)] content-start gap-6 lg:col-span-5">
             <form
@@ -139,8 +144,8 @@ export function ReportView({ report, onBack, onExpected, onShare, rechecking }: 
               </div>
             </form>
 
-            <section className="rounded-[24px] border border-line bg-card p-5 sm:p-7">
-              <h2 className="text-[20px] font-bold tracking-[-0.03em]">What we didn't check</h2>
+            <details className="rounded-2xl border border-line bg-card p-5 sm:p-7">
+              <summary className="min-h-11 cursor-pointer text-[20px] font-bold tracking-[-0.03em]">What we couldn't verify</summary>
               <ul className="mt-3 grid gap-2.5">
                 {report.notChecked.map((n) => (
                   <li key={n} className="flex gap-3 text-[15px] leading-snug text-mute">
@@ -148,24 +153,40 @@ export function ReportView({ report, onBack, onExpected, onShare, rechecking }: 
                   </li>
                 ))}
               </ul>
-            </section>
+            </details>
 
             <div className="flex flex-wrap gap-2">
               <button onClick={onShare} className="inline-flex h-12 items-center gap-2 rounded-full border border-line bg-card px-5 text-[15px] font-semibold hover:border-ink">
-                <Copy size={17} /> Copy link to this check
+                <Copy size={17} /> Share an address check
               </button>
               <button onClick={onBack} className="inline-flex h-12 items-center gap-2 rounded-full px-5 text-[15px] font-semibold hover:bg-paper-2">
                 <RotateCcw size={17} /> Check another
               </button>
             </div>
             <p className="text-[13px] leading-snug text-mute">
-              BeforePay is an information tool, not financial advice. No result can guarantee a payment is safe. Nothing about this check is stored.
+              No result guarantees a payment is safe. BeforePay does not save your check. Shared links contain a redacted address and run a new check; payment context is excluded.
             </p>
           </aside>
         </div>
       </div>
     </div>
   )
+}
+
+function QuickSummary({ report }: { report: Report }) {
+  const processor = report.chain.find(c => c.role === 'processor')
+  const recipient = report.chain.find(c => c.role === 'recipient')
+  const attention = report.criteria.filter(c => c.status === 'fail' || c.status === 'caution').slice(0, 3)
+  return <section className="mt-6 border-y border-line py-6" aria-labelledby="quick-summary">
+    <h2 id="quick-summary" className="text-[23px] font-bold tracking-[-0.03em]">Your payment at a glance</h2>
+    <dl className="mt-4 grid min-w-0 gap-5 sm:grid-cols-3">
+      <div className="min-w-0"><dt className="text-[14px] font-semibold text-mute">Actual destination</dt><dd className="mt-1 break-all font-mono text-[17px] font-semibold">{report.url.hostname}</dd><dd className="mt-1 text-[14px] text-mute">{processor?.value ? `Payment provider: ${processor.value}` : 'Payment provider not identified'}</dd></div>
+      <div className="min-w-0"><dt className="text-[14px] font-semibold text-mute">Who receives the money?</dt><dd className="mt-1 text-[17px] font-semibold">{recipient?.assurance === 'verified' ? recipient.value : 'Not verified'}</dd><dd className="mt-1 text-[14px] text-mute">{report.expected ? `Name to compare: ${report.expected}. Account ownership has not been verified.` : 'A recognised provider does not verify the person or shop being paid.'}</dd></div>
+      <div className="min-w-0"><dt className="text-[14px] font-semibold text-mute">Amount to confirm</dt><dd className="mt-1 break-words text-[17px] font-semibold">{report.context?.amount || report.screenshot?.amount || 'Check in the official checkout'}</dd><dd className="mt-1 text-[14px] text-mute">Final amount and currency have not been independently verified.</dd></div>
+    </dl>
+    {attention.length > 0 && <ul className="mt-5 grid gap-2 border-t border-line pt-4">{attention.map(c => <li key={c.id} className="flex items-start gap-3 text-[15px] leading-relaxed"><StatusDot status={c.status} /><span>{c.summary}</span></li>)}</ul>}
+    {!report.simulation && <details className="mt-4"><summary className="min-h-11 cursor-pointer text-[14px] font-semibold underline underline-offset-4">View the full link checked</summary><p className="mt-2 break-all font-mono text-[15px] leading-relaxed">{report.url.href}</p></details>}
+  </section>
 }
 
 function IdentityCard({ report, checked }: { report: Report; checked: Date }) {

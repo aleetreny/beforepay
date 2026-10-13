@@ -108,6 +108,14 @@ export interface ScreenshotFindings {
   offPlatformRequest: boolean
   summary: string | null
   simulated?: boolean
+  readingMethod?: 'local_ocr' | 'ai'
+}
+
+export interface PaymentContext {
+  channel?: 'website' | 'message' | 'email' | 'marketplace' | 'qr'
+  method?: 'card' | 'personal' | 'bank' | 'crypto'
+  amount?: string
+  message?: string
 }
 
 export interface Externals {
@@ -177,6 +185,7 @@ export interface Report {
   notChecked: string[]
   checkedAt: string
   expected?: string
+  context?: PaymentContext
   screenshot?: ScreenshotFindings
   registry?: RegistryInfo
   simulation?: Simulation

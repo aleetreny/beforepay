@@ -1,7 +1,7 @@
 import type { BrandResult } from './analyze'
 import type { Criterion, DnsInfo, EvidenceRow, ParsedUrl, ProcessorMatch, RdapInfo, ScreenshotFindings, Signal, ThreatInfo } from './types'
 
-export const ENGINE_VERSION = '2.0.0'
+export const ENGINE_VERSION = '2.1.0'
 
 interface CriteriaInput {
   p: ParsedUrl
@@ -88,7 +88,7 @@ export function buildCriteria({ p, rdap, ageDays, brand, processor, expectedRow,
       detail: 'A URL, company-name match or payment-provider domain cannot prove who owns the receiving account. Confirmation requires trusted payment or bank-side evidence.', basis: 'Optional service',
     },
   ]
-  if (shot) out.push({ id: 'message', title: 'Message or screenshot wording', status: shot.offPlatformRequest ? 'fail' : shot.suspicious.length ? 'caution' : 'info', summary: shot.offPlatformRequest ? 'A request to pay outside the original platform was found.' : shot.suspicious[0] ?? 'No unusual wording in the supplied image.', detail: 'Visible names, logos and amounts can be forged. AI extraction can make mistakes and does not verify the recipient.', basis: shot.simulated ? 'Simulation' : 'User input' })
+  if (shot) out.push({ id: 'message', title: shot.readingMethod === 'local_ocr' ? 'Screenshot text recognition' : 'Message or screenshot wording', status: shot.offPlatformRequest ? 'fail' : shot.suspicious.length ? 'caution' : 'info', summary: shot.readingMethod === 'local_ocr' ? 'The link was read on your device and reviewed by you.' : shot.offPlatformRequest ? 'A request to pay outside the original platform was found.' : shot.suspicious[0] ?? 'No unusual wording in the supplied image.', detail: shot.readingMethod === 'local_ocr' ? 'Text recognition only extracts the address. It does not check the rest of the image or verify names, amounts or the recipient.' : 'Visible names, logos and amounts can be forged. AI extraction can make mistakes and does not verify the recipient.', basis: shot.simulated ? 'Simulation' : 'User input' })
   return out
 }
 

@@ -18,4 +18,5 @@ progress.md
 .DS_Store
 .openai/
 .sites-runtime/
+.serena/
 .coverage/

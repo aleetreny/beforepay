@@ -4,7 +4,7 @@ import { analyze } from './analyze'
 import { DEMOS, type DemoScenario } from './demos'
 import { SHORTENERS } from './reference'
 import { summariseRdap } from './rdap'
-import type { Externals, InputSource, RdapInfo, RegistryInfo, Report, ScreenshotFindings, ThreatInfo } from './types'
+import type { Externals, InputSource, PaymentContext, RdapInfo, RegistryInfo, Report, ScreenshotFindings, ThreatInfo } from './types'
 import { redactUrl } from '../lib/ingest'
 
 export interface Capabilities {
@@ -13,10 +13,13 @@ export interface Capabilities {
   threat: boolean
   registry: boolean
   expand: boolean
+  threatProvider?: string
 }
 
 const NO_SERVER: Capabilities = { server: false, ai: false, threat: false, registry: false, expand: false }
 let capsPromise: Promise<Capabilities> | null = null
+const API_BASE = (import.meta.env.VITE_API_BASE ?? '').replace(/\/$/, '')
+const api = (path: string) => `${API_BASE}/api/${path}`
 
 async function getJson<T>(input: string, init?: RequestInit & { timeoutMs?: number }): Promise<{ status: number; data: T | null }> {
   const ctrl = new AbortController()
@@ -33,8 +36,8 @@ async function getJson<T>(input: string, init?: RequestInit & { timeoutMs?: numb
 
 /** Which optional services this deployment offers. Static hosting (no /api) → all false. */
 export function capabilities(): Promise<Capabilities> {
-  if (import.meta.env.VITE_STATIC_HOST === 'true') return Promise.resolve(NO_SERVER)
-  capsPromise ??= getJson<Capabilities>('/api/status', { timeoutMs: 3000 })
+  if (import.meta.env.VITE_STATIC_HOST === 'true' && !API_BASE) return Promise.resolve(NO_SERVER)
+  capsPromise ??= getJson<Capabilities>(api('status'), { timeoutMs: 3000 })
     .then((r) => (r.data && r.data.server ? r.data : NO_SERVER))
     .catch(() => NO_SERVER)
   return capsPromise
@@ -48,7 +51,7 @@ async function lookupRdap(domain: string | null, caps: Capabilities): Promise<Rd
   const sourceUrl = `https://rdap.org/domain/${encodeURIComponent(domain)}`
   if (caps.server) {
     try {
-      const r = await getJson<RdapInfo & { sourceUrl?: string }>(`/api/rdap?domain=${encodeURIComponent(domain)}`)
+      const r = await getJson<RdapInfo & { sourceUrl?: string }>(api(`rdap?domain=${encodeURIComponent(domain)}`))
       if (r.data?.status === 'ok') return { ...r.data, source: { label: 'Domain registry (RDAP)', url: sourceUrl } }
       if (r.data) return { status: 'unavailable', reason: r.data.reason }
     } catch {
@@ -69,9 +72,9 @@ async function lookupThreat(href: string, caps: Capabilities): Promise<ThreatInf
   if (!caps.threat) return { status: 'not_configured' }
   if (offline()) return { status: 'offline' }
   try {
-    const r = await getJson<ThreatInfo>('/api/threat', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ url: href }) })
+    const r = await getJson<ThreatInfo>(api('threat'), { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ url: href }) })
     if (r.data && (r.data.status === 'clean' || r.data.status === 'flagged')) {
-      return { ...r.data, source: { label: 'Google Safe Browsing', url: 'https://safebrowsing.google.com/' } }
+      return { ...r.data, source: r.data.source ?? { label: caps.threatProvider ?? 'Google threat lookup', url: 'https://safebrowsing.google.com/' } }
     }
     return { status: r.status === 501 ? 'not_configured' : 'error' }
   } catch {
@@ -83,7 +86,7 @@ export async function searchRegistry(name: string): Promise<RegistryInfo> {
   const caps = await capabilities()
   if (!caps.registry) return { status: 'not_configured' }
   try {
-    const r = await getJson<RegistryInfo>(`/api/registry?q=${encodeURIComponent(name)}`)
+    const r = await getJson<RegistryInfo>(api(`registry?q=${encodeURIComponent(name)}`))
     return r.data?.status === 'ok' ? r.data : { status: 'error' }
   } catch {
     return { status: 'error' }
@@ -91,9 +94,9 @@ export async function searchRegistry(name: string): Promise<RegistryInfo> {
 }
 
 async function expand(url: URL, caps: Capabilities): Promise<URL | null> {
-  if (!caps.server || offline()) return null
+  if (!caps.expand || offline()) return null
   try {
-    const r = await getJson<{ status: string; location?: string }>(`/api/expand?url=${encodeURIComponent(url.href)}`)
+    const r = await getJson<{ status: string; location?: string }>(api(`expand?url=${encodeURIComponent(url.href)}`))
     return r.data?.status === 'ok' && r.data.location ? new URL(r.data.location) : null
   } catch {
     return null
@@ -103,6 +106,7 @@ async function expand(url: URL, caps: Capabilities): Promise<URL | null> {
 export interface CheckOptions {
   source: InputSource
   expected?: string
+  context?: PaymentContext
   screenshot?: ScreenshotFindings
 }
 
@@ -129,10 +133,11 @@ export async function runCheck(url: URL, opts: CheckOptions): Promise<Report> {
   return analyze(target, externals, opts)
 }
 
-export function runDemo(demo: DemoScenario, expectedOverride?: string): Report {
+export function runDemo(demo: DemoScenario, expectedOverride?: string, context?: PaymentContext): Report {
   return analyze(new URL(demo.url), demo.externals(new Date()), {
     source: 'demo',
     expected: expectedOverride ?? demo.expected,
+    context,
     screenshot: demo.screenshot,
     extraBrands: demo.extraBrands,
     simulation: demo.simulation,
@@ -151,7 +156,7 @@ export interface VisionResult {
 
 export async function readScreenshot(dataUrl: string): Promise<VisionResult> {
   try {
-    const r = await getJson<{ status: string; findings?: ScreenshotFindings; reason?: string; error?: string }>('/api/vision', {
+    const r = await getJson<{ status: string; findings?: ScreenshotFindings; reason?: string; error?: string }>(api('vision'), {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ image: dataUrl }),

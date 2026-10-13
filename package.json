@@ -1,7 +1,7 @@
 {
   "name": "beforepay",
   "private": true,
-  "version": "2.0.0",
+  "version": "2.1.0",
   "type": "module",
   "description": "BeforePay \u2014 know before you pay. Payment transparency checks for links, QR codes and screenshots.",
   "scripts": {
@@ -12,7 +12,8 @@
     "test": "vitest run",
     "icons": "node scripts/make-icons.mjs",
     "build:pages": "tsc -b && node scripts/build.mjs --pages",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build:site": "tsc -b && node scripts/build-worker.mjs"
   },
   "engines": {
     "node": ">=20"
@@ -25,6 +26,7 @@
     "punycode": "^2.3.1",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
+    "tesseract.js": "^6.0.1",
     "tldts": "^7.4.18"
   },
   "devDependencies": {
@@ -38,6 +40,7 @@
     "tailwindcss": "^4.3.3",
     "typescript": "5.9",
     "vite": "^8.3.4",
-    "vitest": "^5.0.4"
+    "vitest": "^5.0.4",
+    "esbuild": "^0.28.2"
   }
 }

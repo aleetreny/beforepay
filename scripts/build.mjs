@@ -6,6 +6,7 @@ process.env.SINGLE_FILE = '1'
 if (process.argv.includes('--pages')) {
   process.env.VITE_BASE_PATH = '/beforepay/'
   process.env.VITE_STATIC_HOST = 'true'
+  process.env.VITE_API_BASE ||= 'https://beforepay-demo.aleetreny.chatgpt.site'
 }
 await build()
 await import('./inline-site.mjs')
@@ -22,4 +23,4 @@ writeFileSync('dist/manifest.webmanifest', JSON.stringify(manifest, null, 2) + '
 writeFileSync('dist/.nojekyll', '')
 let commit = process.env.GITHUB_SHA
 if (!commit) { try { commit = execFileSync('git', ['rev-parse', 'HEAD'], {encoding: 'utf8'}).trim() } catch { commit = 'local' } }
-writeFileSync('dist/build-info.json', JSON.stringify({ commit, version: '2.0.0', builtAt: new Date().toISOString() }, null, 2) + '\n')
+writeFileSync('dist/build-info.json', JSON.stringify({ commit, version: '2.1.0', builtAt: new Date().toISOString() }, null, 2) + '\n')
