@@ -6,7 +6,7 @@ import type { Brand, Externals, ScreenshotFindings, Simulation } from './types'
  * fixtures, labelled as simulated everywhere they surface.
  */
 export interface DemoScenario {
-  id: 'ordinary' | 'marketplace' | 'parking'
+  id: 'ordinary' | 'marketplace' | 'parking' | 'paypal'
   label: string
   title: string
   blurb: string
@@ -29,6 +29,25 @@ const simulatedRdap = (registered: string, registrar: string) => ({
 })
 
 export const DEMOS: DemoScenario[] = [
+  {
+    id: 'paypal',
+    label: 'PayPal example',
+    title: 'PayPal hidden-destination trick',
+    blurb: 'It looks like PayPal, but the text before @ is not the destination.',
+    url: 'https://paypal.com@payments.example/pay',
+    expected: 'PayPal',
+    source: 'demo',
+    externals: () => ({
+      rdap: { status: 'unavailable', reason: 'reserved example domain; no live registry lookup in this simulation' },
+      threat: { status: 'not_configured' },
+    }),
+    simulation: {
+      id: 'paypal',
+      title: 'PayPal hidden-destination trick',
+      premise: 'A sender gives you a link that starts with paypal.com. The browser actually goes to payments.example, after the @ sign.',
+      note: 'Illustrative address on a reserved example domain. Address checks run for real; no registry or threat results are fabricated.',
+    },
+  },
   {
     id: 'ordinary',
     label: 'Example A',
