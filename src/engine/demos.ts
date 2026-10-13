@@ -6,7 +6,7 @@ import type { Brand, Externals, ScreenshotFindings, Simulation } from './types'
  * fixtures, labelled as simulated everywhere they surface.
  */
 export interface DemoScenario {
-  id: 'ordinary' | 'marketplace' | 'parking' | 'paypal'
+  id: 'ordinary' | 'marketplace' | 'parking' | 'paypal' | 'paypal-official' | 'paypal-personal'
   label: string
   title: string
   blurb: string
@@ -29,6 +29,20 @@ const simulatedRdap = (registered: string, registrar: string) => ({
 })
 
 export const DEMOS: DemoScenario[] = [
+  {
+    id: 'paypal-official', label: 'Official address', title: 'PayPal checkout',
+    blurb: 'A recognised PayPal domain. The receiving merchant is still unknown.',
+    url: 'https://www.paypal.com/checkoutnow', expected: 'PayPal', source: 'demo',
+    externals: () => ({ rdap: { status: 'unavailable', reason: 'external lookups are not run in this offline example' }, threat: { status: 'not_configured' } }),
+    simulation: { id: 'paypal-official', title: 'PayPal checkout', premise: 'This address matches the PayPal reference domain. It does not verify a specific merchant or receiving account.', note: 'Address rules run for real. No payment is opened; external lookup results are not fabricated.' },
+  },
+  {
+    id: 'paypal-personal', label: 'Personal payment', title: 'PayPal.Me recipient unknown',
+    blurb: 'A personal payment handle does not prove who receives your money.',
+    url: 'https://paypal.me/sofaseller/340', expected: 'PayPal', source: 'demo',
+    externals: () => ({ rdap: { status: 'unavailable', reason: 'external lookups are not run in this offline example' }, threat: { status: 'not_configured' } }),
+    simulation: { id: 'paypal-personal', title: 'Personal PayPal payment', premise: 'An illustrative handle on PayPal.Me. The account holder and buyer protection are not verified.', note: 'Address rules run for real. No payment is opened; external lookup results are not fabricated.' },
+  },
   {
     id: 'paypal',
     label: 'PayPal example',

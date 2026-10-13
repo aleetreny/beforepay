@@ -201,7 +201,7 @@ export default function App() {
       )}
       {view.name === 'home' && <Home caps={caps} installEvt={installEvt} onCheck={startCheck} onDemo={startDemo} onConfirm={(url, source, screenshot) => setView({ name: 'confirm', url, source, screenshot })} flash={flash} />}
       {view.name === 'confirm' && <Confirm url={view.url} source={view.source} initialExpected={view.expected} onCancel={home} onGo={(expected) => startCheck(view.url, view.source, { expected, screenshot: view.screenshot })} />}
-      {view.name === 'analyzing' && <Analyzing url={parseTarget(view.url)} step={step} threatConfigured={Boolean(caps?.threat) || view.url.href.includes('stripe.com/c/pay/cs_live_b1North') || DEMOS.some((d) => d.id !== 'paypal' && d.url === view.url.href)} />}
+      {view.name === 'analyzing' && <Analyzing url={parseTarget(view.url)} step={step} threatConfigured={Boolean(caps?.threat) || view.url.href.includes('stripe.com/c/pay/cs_live_b1North') || DEMOS.some((d) => !d.id.startsWith('paypal') && d.url === view.url.href)} />}
       {view.name === 'report' && <ReportView report={view.report} onBack={home} onExpected={recheckExpected} onShare={share} rechecking={rechecking} />}
       {toast && (
         <div className="fixed inset-x-0 bottom-0 z-[60] flex justify-center p-4 safe-bottom" role="status">
@@ -459,16 +459,16 @@ function Home({ caps, installEvt, onCheck, onDemo, onConfirm, flash }: HomeProps
 
           <aside className="on-dark rise min-w-0 self-start rounded-[28px] bg-ink p-5 text-paper sm:p-7 lg:col-span-5 lg:mt-3" style={{ animationDelay: '140ms' }} aria-labelledby="sims">
             <h2 id="sims" className="text-[22px] font-bold tracking-[-0.03em]">Try a simulation</h2>
-            <p className="mt-1 text-[15px] text-mute-dark">A PayPal address trick you can inspect safely. Works offline.</p>
+            <p className="mt-1 text-[15px] text-mute-dark">Three PayPal examples. Address checks run for real and work offline.</p>
             <ul className="mt-5 grid grid-cols-[minmax(0,1fr)] gap-2">
-              {DEMOS.filter((d) => d.id === 'paypal').map((d) => (
+              {DEMOS.filter((d) => d.id.startsWith('paypal')).sort((a, b) => a.id === 'paypal' ? -1 : b.id === 'paypal' ? 1 : 0).map((d) => (
                 <li key={d.id}>
                   <button onClick={() => onDemo(d)} className="group flex w-full items-center gap-4 rounded-2xl border border-line-dark p-4 text-left transition-colors hover:border-lime hover:bg-ink-2">
                     <div className="min-w-0 flex-1">
                       <p className="text-[12px] font-semibold text-lime">{d.label}</p>
                       <p className="mt-0.5 text-[18px] font-bold tracking-[-0.02em]">{d.title}</p>
                       <p className="mt-1 text-[14px] leading-snug text-mute-dark">{d.blurb}</p>
-                      <p className="mt-2 truncate font-mono text-[12px] text-paper/60">{new URL(d.url).hostname}{new URL(d.url).pathname.slice(0, 18)}…</p>
+                      <p className="mt-2 truncate font-mono text-[12px] text-paper/60">{d.url}</p>
                     </div>
                     <span className="grid size-11 shrink-0 place-items-center rounded-full bg-lime text-ink transition-transform group-hover:translate-x-0.5">
                       <Play size={17} fill="currentColor" />
