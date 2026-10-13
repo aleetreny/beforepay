@@ -1,6 +1,6 @@
 import { parse as parseDomain } from 'tldts'
 import { toUnicode } from 'punycode'
-import { redactUrl } from '../lib/ingest'
+import { redactUrl, redactUsername } from '../lib/ingest'
 import {
   BRANDS,
   COMMERCE_PLATFORMS,
@@ -61,7 +61,7 @@ export function parseTarget(url: URL): ParsedUrl {
     isPrivateSuffix: Boolean(info.isPrivate),
     path: redacted.path || '/',
     hasCredentials: Boolean(url.username || url.password),
-    credentialText: url.username ? decodeSafe(url.username).slice(0, 80) : null,
+    credentialText: url.username ? decodeSafe(redactUsername(url.username)).slice(0, 80) : url.password ? '•••' : null,
     redactions: redacted.count,
   }
 }

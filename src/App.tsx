@@ -13,7 +13,7 @@ import { Notice, Sheet, UrlAnatomy, Wordmark } from './ui'
 
 type View =
   | { name: 'home' }
-  | { name: 'confirm'; url: URL; source: InputSource; screenshot?: ScreenshotFindings }
+  | { name: 'confirm'; url: URL; source: InputSource; screenshot?: ScreenshotFindings; expected?: string }
   | { name: 'analyzing'; url: URL }
   | { name: 'report'; report: Report; raw: URL | null; demo?: DemoScenario }
 
@@ -32,6 +32,7 @@ export default function App() {
   const [toast, setToast] = useState<string | null>(null)
   const [rechecking, setRechecking] = useState(false)
   const [installEvt, setInstallEvt] = useState<InstallEvent | null>(null)
+  const operation = useRef(0)
 
   useEffect(() => {
     capabilities().then(setCaps)
@@ -77,15 +78,17 @@ export default function App() {
 
   const startCheck = useCallback(
     async (url: URL, source: InputSource, opts: { expected?: string; screenshot?: ScreenshotFindings } = {}) => {
+      const current = ++operation.current
       setView({ name: 'analyzing', url })
       scrollTo({ top: 0 })
       const work = runCheck(url, { source, expected: opts.expected, screenshot: opts.screenshot })
       await animateSteps(work)
       const report = await work
+      if (current !== operation.current) return
       const qs = new URLSearchParams({ url: shareableTarget(url) })
       if (opts.expected) qs.set('expect', opts.expected)
       try {
-        history.replaceState(null, '', `${location.pathname.includes('/check') ? location.pathname : 'check'}?${qs}`)
+        history.replaceState(null, '', `${import.meta.env.BASE_URL}check?${qs}`)
       } catch {
         /* ignore */
       }
@@ -98,13 +101,15 @@ export default function App() {
   )
 
   const startDemo = useCallback(
-    async (demo: DemoScenario) => {
-      go(`check?demo=${demo.id}`)
+    async (demo: DemoScenario, expected?: string) => {
+      go(`${import.meta.env.BASE_URL}check?demo=${demo.id}`)
       const url = new URL(demo.url)
+      const current = ++operation.current
       setView({ name: 'analyzing', url })
       scrollTo({ top: 0 })
       await animateSteps(Promise.resolve())
-      setView({ name: 'report', report: runDemo(demo), raw: null, demo })
+      if (current !== operation.current) return
+      setView({ name: 'report', report: runDemo(demo, expected), raw: null, demo })
     },
     [animateSteps, go],
   )
@@ -114,7 +119,7 @@ export default function App() {
     const params = new URLSearchParams(location.search)
     const demo = findDemo(params.get('demo'))
     if (demo) {
-      startDemo(demo)
+      startDemo(demo, params.get('expect') ?? undefined)
       return
     }
     const shared = [params.get('url'), params.get('text'), params.get('title')].filter(Boolean).join(' ')
@@ -123,43 +128,49 @@ export default function App() {
     if (r.ok) {
       const source: InputSource = location.pathname.includes('share') ? 'share' : 'link'
       if (params.get('auto') === '1') startCheck(r.url, source, { expected: params.get('expect') ?? undefined })
-      else setView({ name: 'confirm', url: r.url, source })
+      else setView({ name: 'confirm', url: r.url, source, expected: params.get('expect') ?? undefined })
     } else flash(INGEST_MESSAGES[r.error])
     // run once on load
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
-    const onPop = () => setView({ name: 'home' })
+    const onPop = () => { operation.current++; setView({ name: 'home' }); setRechecking(false) }
     addEventListener('popstate', onPop)
     return () => removeEventListener('popstate', onPop)
   }, [])
 
   const home = () => {
+    operation.current++
+    setRechecking(false)
     go(location.pathname.includes('/check') || location.pathname.includes('share') ? import.meta.env.BASE_URL : location.pathname)
     setView({ name: 'home' })
   }
 
   const recheckExpected = async (name: string) => {
     if (view.name !== 'report') return
+    const current = ++operation.current
     setRechecking(true)
     try {
       if (view.demo) {
         setView({ ...view, report: runDemo(view.demo, name || undefined) })
       } else if (view.raw) {
         const report = await runCheck(view.raw, { source: view.report.source, expected: name || undefined, screenshot: view.report.screenshot })
+        if (current !== operation.current) return
         setView({ ...view, report })
-        if (name && caps?.registry) searchRegistry(name).then((registry) => setView((v) => (v.name === 'report' ? { ...v, report: { ...v.report, registry } } : v)))
+        if (name && caps?.registry) searchRegistry(name).then((registry) => setView((v) => (current === operation.current && v.name === 'report' ? { ...v, report: { ...v.report, registry } } : v)))
       }
     } finally {
-      setRechecking(false)
+      if (current === operation.current) setRechecking(false)
     }
   }
 
   const share = async () => {
     if (view.name !== 'report') return
     const base = `${location.origin}${location.pathname.replace(/(check|share-target)\/?$/, '')}`.replace(/\/?$/, '/')
-    const link = view.demo ? `${base}check?demo=${view.demo.id}` : `${base}check?url=${encodeURIComponent(shareableTarget(view.raw!))}`
+    const params = new URLSearchParams(view.demo ? { demo: view.demo.id } : { url: shareableTarget(view.raw!) })
+    if (view.report.expected) params.set('expect', view.report.expected)
+    const link = `${base}check?${params}`
     try {
       await navigator.clipboard.writeText(link)
       flash('Link copied — session tokens removed')
@@ -176,7 +187,7 @@ export default function App() {
         </div>
       )}
       {view.name === 'home' && <Home caps={caps} installEvt={installEvt} onCheck={startCheck} onDemo={startDemo} onConfirm={(url, source, screenshot) => setView({ name: 'confirm', url, source, screenshot })} flash={flash} />}
-      {view.name === 'confirm' && <Confirm url={view.url} source={view.source} onCancel={home} onGo={(expected) => startCheck(view.url, view.source, { expected, screenshot: view.screenshot })} />}
+      {view.name === 'confirm' && <Confirm url={view.url} source={view.source} initialExpected={view.expected} onCancel={home} onGo={(expected) => startCheck(view.url, view.source, { expected, screenshot: view.screenshot })} />}
       {view.name === 'analyzing' && <Analyzing url={parseTarget(view.url)} step={step} threatConfigured={Boolean(caps?.threat) || view.url.href.includes('stripe.com/c/pay/cs_live_b1North') || DEMOS.some((d) => d.url === view.url.href)} />}
       {view.name === 'report' && <ReportView report={view.report} onBack={home} onExpected={recheckExpected} onShare={share} rechecking={rechecking} />}
       {toast && (
@@ -190,9 +201,9 @@ export default function App() {
 
 /* ------------------------------------------------------------------ */
 
-function Confirm({ url, source, onCancel, onGo }: { url: URL; source: InputSource; onCancel: () => void; onGo: (expected?: string) => void }) {
+function Confirm({ url, source, initialExpected, onCancel, onGo }: { url: URL; source: InputSource; initialExpected?: string; onCancel: () => void; onGo: (expected?: string) => void }) {
   const p = parseTarget(url)
-  const [expected, setExpected] = useState('')
+  const [expected, setExpected] = useState(initialExpected ?? '')
   const from = { share: 'Shared to BeforePay', link: 'Opened from a BeforePay link', qr: 'Read from a QR code', screenshot: 'Found in your screenshot', paste: 'Pasted', demo: 'Simulation' }[source]
   return (
     <div>
@@ -602,6 +613,8 @@ function HowItWorks({ caps }: { caps: Capabilities | null }) {
 function Scanner({ open, onClose, onResult, onUpload }: { open: boolean; onClose: () => void; onResult: (t: string) => void; onUpload: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [err, setErr] = useState<string | null>(null)
+  const resultRef = useRef(onResult)
+  resultRef.current = onResult
   useEffect(() => {
     if (!open) return
     setErr(null)
@@ -629,7 +642,7 @@ function Scanner({ open, onClose, onResult, onUpload }: { open: boolean; onClose
             const found = decodeFrame(v, canvas)
             if (found) {
               navigator.vibrate?.(30)
-              return onResult(found)
+              return resultRef.current(found)
             }
           }
           raf = requestAnimationFrame(tick)
@@ -650,7 +663,7 @@ function Scanner({ open, onClose, onResult, onUpload }: { open: boolean; onClose
       cancelAnimationFrame(raf)
       stream?.getTracks().forEach((t) => t.stop())
     }
-  }, [open, onResult])
+  }, [open])
 
   return (
     <Sheet open={open} onClose={onClose} title="Scan a QR code" dark>

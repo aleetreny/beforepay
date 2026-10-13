@@ -80,7 +80,7 @@ export function ingest(input: string | null | undefined): IngestResult {
   if (PAYMENT_SCHEME.test(text)) {
     return { ok: false, error: 'payment_uri', paymentUri: parsePaymentUri(text) }
   }
-  if (UNSAFE_SCHEME.test(text)) return { ok: false, error: 'unsupported_scheme' }
+  if (UNSAFE_SCHEME.test(text) || (/^[a-z][a-z0-9+.-]*:/i.test(text) && !/^https?:\/\//i.test(text) && !/^[a-z0-9-]+\.[a-z]/i.test(text))) return { ok: false, error: 'unsupported_scheme' }
 
   let candidate: string | null = null
   const explicit = text.match(URL_IN_TEXT)
@@ -171,7 +171,10 @@ export function redactUrl(url: URL): Redacted {
   })
   if (url.hash && url.hash.length > 1) count++
   const path = segments.join('/') + (params.length ? `?${params.join('&')}` : '')
-  const auth = url.username ? `${url.username}${url.password ? ':' + HIDDEN : ''}@` : ''
+  const username = redactUsername(url.username)
+  if (username !== url.username) count++
+  if (url.password) count++
+  const auth = url.username || url.password ? `${username}${url.password ? ':' + HIDDEN : ''}@` : ''
   const port = url.port ? `:${url.port}` : ''
   return { href: `${url.protocol}//${auth}${url.hostname}${port}${path}`, path, count }
 }
@@ -180,6 +183,13 @@ export function redactUrl(url: URL): Redacted {
 export function shareableTarget(url: URL): string {
   const { path } = redactUrl(url)
   // Keep a deceptive "user@" prefix (it is evidence), never a password.
-  const auth = url.username ? `${url.username}@` : ''
+  const auth = url.username || url.password ? `${redactUsername(url.username) || 'x'}@` : ''
   return `${url.protocol}//${auth}${url.host}${path}`.replaceAll(HIDDEN, 'x')
+}
+
+/** Keep brand decoys, but hide personal information in credentials. */
+export function redactUsername(username: string): string {
+  let decoded = username
+  try { decoded = decodeURIComponent(username) } catch { /* keep raw */ }
+  return EMAILISH.test(decoded) || TOKENISH.test(decoded) || DIGITS_LONG.test(decoded) ? HIDDEN : username
 }
