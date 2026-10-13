@@ -82,6 +82,7 @@ export function ReportView({ report, onBack, onExpected, onShare, rechecking }: 
       )}
 
       <div className="safe-x mx-auto max-w-[1240px]">
+        {report.simulation?.id.startsWith('paypal') && <PayPalDemoAddress report={report} />}
         <section className={`rise overflow-hidden rounded-[28px] ${v.band}`} aria-labelledby="verdict">
           <div className="px-5 pt-6 pb-7 sm:px-10 sm:pt-9 sm:pb-10">
             <div className="flex items-center gap-3">
@@ -311,6 +312,28 @@ function WhyCard({ rows }: { rows: EvidenceRow[] }) {
           </li>
         ))}
       </ul>
+    </section>
+  )
+}
+
+function PayPalDemoAddress({ report }: { report: Report }) {
+  const disguised = report.simulation?.id === 'paypal'
+  const personal = report.simulation?.id === 'paypal-personal'
+  const reason = disguised
+    ? 'The browser ignores the text before @. The actual destination is payments.example, not PayPal.'
+    : personal
+      ? 'paypal.me identifies the payment provider. sofaseller is only an account handle: the person receiving the money is not verified.'
+      : 'www.paypal.com matches the official PayPal domain. The merchant and the account receiving the money are still not verified.'
+  return (
+    <section className="mb-5 rounded-2xl border border-line bg-card p-5 sm:p-8" aria-labelledby="demo-address-title">
+      <h2 id="demo-address-title" className="text-[18px] font-bold">Payment link checked</h2>
+      <p className="mt-4 break-all font-mono text-[clamp(1.4rem,3.3vw,2.5rem)] leading-relaxed font-semibold" aria-label={report.url.href}>
+        <span className="text-mute">https://</span>
+        {disguised && <mark className="rounded bg-red-soft px-1 text-red">paypal.com@</mark>}
+        <mark className="rounded bg-lime px-1 text-ink">{report.url.hostname}</mark>
+        {personal ? <><span>/</span><mark className="rounded bg-amber-soft px-1 text-amber">sofaseller</mark><span>/340</span></> : <span>{report.url.path}</span>}
+      </p>
+      <p className="mt-4 max-w-[75ch] text-[17px] leading-relaxed">{reason}</p>
     </section>
   )
 }
