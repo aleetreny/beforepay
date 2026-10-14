@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { routeApi } from '../api/router'
 afterEach(() => vi.unstubAllGlobals())
 
-const request = (path: string, init?: RequestInit) => new Request(`https://beforepay-demo.aleetreny.chatgpt.site/api/${path}`, init)
+const request = (path: string, init?: RequestInit) => new Request(`https://api.beforepay.example/api/${path}`, init)
 const body = (url: string) => ({ method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ url }) })
 describe('Optional APIs with Worker bindings', () => {
   it('reports capabilities without returning secrets', async () => {

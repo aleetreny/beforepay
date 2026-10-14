@@ -1,6 +1,6 @@
 # Activar las comprobaciones externas
 
-La app funciona sin claves. El lector de capturas y QR trabaja en el dispositivo. GitHub Pages utiliza el backend de la misma app en ChatGPT Sites; las claves van en ese servidor, nunca en GitHub Pages ni en variables `VITE_*`.
+La app funciona sin claves. El lector de capturas y QR trabaja en el dispositivo. La versión pública se publica exclusivamente en GitHub Pages, sin conectar ningún servidor externo. Pages no ejecuta los handlers de `api/`; las claves solo se pueden utilizar en desarrollo local o en un backend que se configure por separado. Nunca van en el navegador ni en variables `VITE_*`.
 
 ## 1. Companies House: gratis
 
@@ -33,9 +33,9 @@ El código usa v5. El servicio gratuito es [exclusivamente no comercial](https:/
 
 Las primeras 100.000 consultas Lookup al mes son gratuitas; por encima puede haber cargos. Los presupuestos de Google son avisos, no un corte automático. Ajusta las cuotas para tu uso previsto. [Precios oficiales](https://cloud.google.com/web-risk/pricing).
 
-## 3. Conectar las claves a la web publicada
+## 3. Utilizar las claves
 
-El archivo `.env.local` está excluido de Git y no se publica. Después de completarlo, indica en este chat que las claves están listas, sin pegar los valores. Se podrán cargar en los secretos de ejecución de ChatGPT Sites usando sus herramientas nativas y comprobar `/api/status` y las respuestas reales. No basta con subir secretos a GitHub Actions.
+El archivo `.env.local` está excluido de Git y no se publica. Después de completarlo, indica en este chat que las claves están listas, sin pegar los valores. No se activarán en la web pública con el despliegue actual: GitHub Pages no ejecuta código de servidor. Sí puedes usarlas localmente con `npm run dev`. Si más adelante autorizas un backend independiente, podrán conectarse y comprobarse con `/api/status`. Subir secretos a GitHub Actions no crea ese servidor.
 
 Para desarrollo local, Vite carga `.env.local` únicamente en los handlers del servidor; reinicia `npm run dev` después de cambiarlo.
 
@@ -51,4 +51,4 @@ Para desarrollo local, Vite carga `.env.local` únicamente en los handlers del s
 
 ## Otros despliegues
 
-`npm run build:pages` usa el backend de ChatGPT Sites por defecto. Para otro origen configura `VITE_API_BASE` y actualiza la lista de orígenes permitidos en `api/router.ts` antes de construir. El build del servidor es `npm run build:site` y requiere un manifiesto local `.openai/hosting.json` con el proyecto de Sites correspondiente, sin `static`.
+`npm run build:pages` construye una app independiente sin backend externo. Para conectar un servidor en el futuro, configura explícitamente `VITE_API_BASE` y despliega los handlers Web estándar de `api/router.ts` en un runtime compatible. Mantén las claves exclusivamente en sus secretos de ejecución y permite el origen de Pages. No se ha configurado ni publicado ese servidor como parte del despliegue exclusivo en GitHub.

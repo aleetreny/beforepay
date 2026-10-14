@@ -6,7 +6,6 @@ process.env.SINGLE_FILE = '1'
 if (process.argv.includes('--pages')) {
   process.env.VITE_BASE_PATH = '/beforepay/'
   process.env.VITE_STATIC_HOST = 'true'
-  process.env.VITE_API_BASE ||= 'https://beforepay-demo.aleetreny.chatgpt.site'
 }
 await build()
 await import('./inline-site.mjs')

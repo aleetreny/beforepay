@@ -20,7 +20,7 @@ A familiar brand name, a padlock and a payment-provider logo can leave the most 
 
 BeforePay turns links, pasted messages and QR codes into an interpretable report. It shows the real destination, explains each warning and separates the website provider, merchant, payment processor and final recipient.
 
-Add payment details only when useful: the expected business, payment method, amount and message wording. The result starts with a short payment summary and a next step; detailed checks and identity records expand on demand. Screenshots are read locally, and extracted links must be reviewed before checking.
+Add payment details only when useful: the expected business, payment method, amount and message wording. The result starts with a short payment summary and a next step; all checks, sources and identity records remain visible in balanced columns. Screenshots are read locally, and extracted links must be reviewed before checking.
 
 ## Try the three PayPal examples
 
@@ -48,14 +48,16 @@ These examples run the real address rules with no fabricated registry dates or t
 | Decode camera/image QR codes | On-device via `jsQR`; camera requires browser permission |
 | Read a link from a screenshot | On-device OCR via Tesseract.js; review and correct the extracted address |
 | Explain payment context | Optional method, amount and message checks; amount and recipient remain independently unverified |
-| Explain, filter and export a report | 12 base criteria, technical details and redacted JSON export |
+| Explain and export a report | All criteria and sources visible in balanced columns; redacted JSON export |
 | Open a domain in VirusTotal | Optional external link; no payment path or token is included |
+
+![BeforePay results with visible checks](docs/assets/beforepay-results.png)
 
 Three possible outcomes: **No known threats detected**, **Identity not verified**, and **Warning signs detected**. A result is never a safety guarantee or a probability of fraud.
 
 ### Optional integrations
 
-GitHub Pages connects to BeforePay's ChatGPT Sites backend. Companies House and Google threat checks become available when server secrets are configured; without keys, they remain **Not checked**. Safe Browsing v5 supports noncommercial use; Web Risk Lookup is the commercial alternative. Local screenshot OCR needs no key. See the [key setup guide](docs/API_SETUP.md) and `.env.example`. VirusTotal scanner results are not connected to BeforePay.
+The public app runs independently on GitHub Pages. Companies House and Google threat handlers are prepared under `api/`, but Pages cannot execute server code. They remain **Not checked** in the public app until a separate backend is explicitly configured. Local screenshot OCR needs no key. See the [key setup guide](docs/API_SETUP.md) and `.env.example`. VirusTotal scanner results are not connected to BeforePay.
 
 Domain age, DNS, HTTPS and a similar company name cannot verify a merchant. The actual recipient remains **Not verified** without trusted bank/payment-side evidence.
 
@@ -76,7 +78,6 @@ The development server serves the UI and optional API handlers. Without keys, co
 npm test             # existing engine and regression suite
 npm run build        # root-hosted production build
 npm run build:pages  # /beforepay/ build for GitHub Pages
-npm run build:site   # Sites Worker build (requires local Sites manifest)
 npm run preview      # preview the production output
 ```
 
@@ -102,4 +103,4 @@ GitHub Actions builds and publishes `dist/` to Pages on every push to `main`. Th
 
 ## Provenance
 
-Built for the Fintech Hackathon in London, 13 October 2026. This edition continues the team prototype in [u199327/beforepay](https://github.com/u199327/beforepay), with its original Git author history retained. Original report and pitch documents are preserved in [docs/archive](docs/archive/README.md); they describe an earlier snapshot. The [ChatGPT Sites demo](https://beforepay-demo.aleetreny.chatgpt.site/) remains available.
+Built for the Fintech Hackathon in London, 13 October 2026. This edition continues the team prototype in [u199327/beforepay](https://github.com/u199327/beforepay), with its original Git author history retained. Original report and pitch documents are preserved in [docs/archive](docs/archive/README.md); they describe an earlier snapshot.

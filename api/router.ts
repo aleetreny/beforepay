@@ -4,9 +4,9 @@ import { GET as registry } from './registry'
 import { POST as threat } from './threat'
 import { json, type Bindings } from './_lib/http'
 
-const ALLOWED = new Set(['https://aleetreny.github.io', 'https://beforepay-demo.aleetreny.chatgpt.site'])
+const ALLOWED = new Set(['https://aleetreny.github.io'])
 
-/** Shared Sites API. No submitted payment URL is fetched. */
+/** Optional Web-standard API. No submitted payment URL is fetched. */
 export async function routeApi(req: Request, bindings: Bindings = {}): Promise<Response> {
   const origin = req.headers.get('origin')
   if (origin && origin !== new URL(req.url).origin && !ALLOWED.has(origin)) return json({ error: 'origin_not_allowed' }, 403)

@@ -12,8 +12,7 @@
     "test": "vitest run",
     "icons": "node scripts/make-icons.mjs",
     "build:pages": "tsc -b && node scripts/build.mjs --pages",
-    "typecheck": "tsc --noEmit",
-    "build:site": "tsc -b && node scripts/build-worker.mjs"
+    "typecheck": "tsc --noEmit"
   },
   "engines": {
     "node": ">=20"
@@ -40,7 +39,6 @@
     "tailwindcss": "^4.3.3",
     "typescript": "5.9",
     "vite": "^8.3.4",
-    "vitest": "^5.0.4",
-    "esbuild": "^0.28.2"
+    "vitest": "^5.0.4"
   }
 }

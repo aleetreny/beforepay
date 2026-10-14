@@ -12,6 +12,6 @@
 
 The address rules, provider detection, expected-merchant checks and QR decoding run on-device. DNS and RDAP make real network queries for ordinary pasted links. The PayPal simulations run deterministic address rules and leave external lookups unchecked.
 
-Screenshot OCR works on-device without a key. Safe Browsing v5 / Web Risk and Companies House use the Sites backend and need server secrets; see API_SETUP.md. VirusTotal is an optional external domain-report link, not a connected scanner.
+Screenshot OCR works on-device without a key. Safe Browsing v5 / Web Risk and Companies House need a separate backend and server secrets; they are not connected on GitHub Pages. See API_SETUP.md. VirusTotal is an optional external domain-report link, not a connected scanner.
 
 **One sentence for the judges:** “Every warning comes with a reason, every missing check stays visible, and a recognised provider never becomes an invented beneficiary.”
